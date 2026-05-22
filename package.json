@@ -1,0 +1,25 @@
+{
+  "name": "pizza-demo-auditor",
+  "version": "1.0.0",
+  "description": "MCP server local que audita la Supabase de Pizza Demo via tools composables. Read-only.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "check-db": "bun run scripts/check-connection.ts",
+    "inspect": "bunx @modelcontextprotocol/inspector bun run src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "postgres": "^3.4.9",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^6.0.3"
+  }
+}
