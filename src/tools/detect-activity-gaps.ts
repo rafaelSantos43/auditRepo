@@ -14,7 +14,7 @@ import { z } from "zod";
 import { sql } from "../db.ts";
 import { COLOMBIA_OFFSET, PEAK_HOURS, T_ORDERS, TZ } from "../constants.ts";
 import { toErrorResult, toSuccessResult, type McpToolResult } from "../lib/errors.ts";
-import { addDays, colombiaDateStr, parseRange } from "../lib/ranges.ts";
+import { addDays, colombiaDateStr, parseRange, toColombiaISO } from "../lib/ranges.ts";
 
 // Texto que el agente lee para decidir cuándo invocar la tool (RULES §3).
 export const detectActivityGapsDescription =
@@ -180,8 +180,8 @@ export async function handleDetectActivityGaps(input: Input): Promise<McpToolRes
 
     const output: Output = {
       range: {
-        from: range.from.toISOString(),
-        to: range.to.toISOString(),
+        from: toColombiaISO(range.from),
+        to: toColombiaISO(range.to),
         timezone: TZ,
         label: range.label,
       },
@@ -219,8 +219,8 @@ function* iterateDays(from: Date, to: Date): Generator<string> {
 
 function buildGap(startMs: number, endMs: number, weekday: number): Gap {
   return {
-    start: new Date(startMs).toISOString(),
-    end: new Date(endMs).toISOString(),
+    start: toColombiaISO(new Date(startMs)),
+    end: toColombiaISO(new Date(endMs)),
     duration_hours: round1((endMs - startMs) / MS_PER_HOUR),
     weekday: DAY_NAME[weekday] ?? String(weekday),
   };

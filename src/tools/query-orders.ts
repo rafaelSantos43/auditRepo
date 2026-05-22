@@ -21,7 +21,7 @@ import {
   TZ,
 } from "../constants.ts";
 import { toErrorResult, toSuccessResult, type McpToolResult } from "../lib/errors.ts";
-import { parseRange } from "../lib/ranges.ts";
+import { parseRange, toColombiaISO } from "../lib/ranges.ts";
 
 // Texto que el agente lee para decidir cuándo invocar la tool (RULES §3).
 export const queryOrdersDescription =
@@ -247,7 +247,7 @@ export async function handleQueryOrders(input: Input): Promise<McpToolResult> {
 
       detail = rows.map((r) => ({
         id: r.id,
-        created_at: r.created_at.toISOString(),
+        created_at: toColombiaISO(r.created_at),
         status: r.status,
         payment_method: r.payment_method,
         delivery_type: r.delivery_type,
@@ -270,8 +270,8 @@ export async function handleQueryOrders(input: Input): Promise<McpToolResult> {
     // ===================================================================
     const output: Output = {
       range: {
-        from: range.from.toISOString(),
-        to: range.to.toISOString(),
+        from: toColombiaISO(range.from),
+        to: toColombiaISO(range.to),
         timezone: TZ,
         label: range.label,
       },

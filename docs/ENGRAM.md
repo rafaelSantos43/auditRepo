@@ -33,6 +33,18 @@
 
 ## Decisiones tomadas (log en orden cronológico inverso)
 
+### 2026-05-22 — Output de fechas: hora local Colombia con offset explícito (`toColombiaISO`)
+
+**Qué:** se agregó `toColombiaISO(date)` en [src/lib/ranges.ts](../src/lib/ranges.ts) y se usa en todos los outputs de las dos tools (range.from/to, detail.created_at, y los gaps). Convierte un instante UTC a ISO 8601 con offset `-05:00` explícito. Ej: `2026-05-22T16:19:38Z` → `2026-05-22T11:19:38-05:00`.
+
+**Por qué:** Rafael creó un pedido a las 11:19am y el audit lo mostraba como `16:19:38`. No era un bug: la DB guarda UTC y el output crudo mostraba UTC. La hora cruda confunde. Mostrar la hora de pared de Colombia con el offset `-05:00` deja el output legible Y sin ambigüedad (parseable, no como un `...Z`). Colombia es UTC-5 fijo (sin DST), así que restar 5h y leer los componentes UTC es exacto.
+
+### 2026-05-22 — Fix de visibilidad de filas: `ALTER ROLE mcp_auditor BYPASSRLS`
+
+**Qué:** un pedido real creado en producción no aparecía en el audit. Causa: RLS (Row Level Security) en la tabla `orders` filtraba las filas para el rol `mcp_auditor`. Fix aplicado en Supabase (server-side, una sola vez): `ALTER ROLE mcp_auditor BYPASSRLS;`.
+
+**Por qué:** hay dos capas de seguridad en Postgres — `GRANT` controla acceso a la TABLA, y RLS filtra QUÉ FILAS ve cada rol. El rol tenía el GRANT SELECT pero las policies RLS (escritas para la app, que filtran por `auth.uid()`) le devolvían cero filas. `BYPASSRLS` le dice "saltate las policies de fila". Es seguro acá porque el rol es **read-only** (solo SELECT): puede ver todo pero no puede modificar nada. Es server-side: NO se re-corre al cambiar de máquina (Windows, etc.) — vive en la config de Supabase, no en el cliente.
+
 ### 2026-05-21 — Convención de idioma: código en inglés, comentarios en español
 
 **Qué:** todos los nombres de archivos, identificadores (funciones/variables/tipos), tool names de MCP y campos de input/output van en **inglés**. Comentarios y documentación de código van en **español**. Las `.describe()` de tools y los mensajes de error quedan en español (el agente y Rafael interactúan en español). Documentado en [RULES.md §8](RULES.md).
@@ -109,18 +121,20 @@
 
 ## Estado actual de implementación
 
-**Hecho:**
+**Hecho (v1 funcional end-to-end):**
 - Init del repo: `package.json`, `tsconfig.json` (strict), `.gitignore`, `.env.example`. Deps instaladas.
-- Infra: `src/constants.ts`, `src/db.ts`, `src/lib/errors.ts`, `src/lib/ranges.ts`.
+- Infra: `src/constants.ts`, `src/db.ts`, `src/lib/errors.ts`, `src/lib/ranges.ts` (incl. `toColombiaISO`).
 - Tool `query_orders` ([src/tools/query-orders.ts](../src/tools/query-orders.ts)) — completa, tsc limpio.
 - Tool `detect_activity_gaps` ([src/tools/detect-activity-gaps.ts](../src/tools/detect-activity-gaps.ts)) — completa, tsc limpio.
+- Resource `pizza-demo://schema` ([src/resources/schema.ts](../src/resources/schema.ts)).
+- `src/index.ts` — server MCP registrando 2 tools + resource, transport stdio.
+- `README.md` + [WINDOWS_SETUP.md](WINDOWS_SETUP.md) cross-platform.
+- Setup en Supabase hecho: rol `mcp_auditor` read-only creado, `BYPASSRLS` aplicado, `DATABASE_URL` en `.env.local`.
+- **Verificado contra la DB real:** `check-db` conecta OK; `query_orders` devolvió un pedido real (revenue_gross 24000, hora correcta en `-05:00`); MCP Inspector lista las 2 tools + resource.
+- Repo en GitHub: `rafaelSantos43/auditRepo`.
 
 **Pendiente:**
-- Resource `pizza-demo://schema` (`src/resources/schema.ts`).
-- `src/index.ts` — server MCP que registra las 2 tools + el resource y conecta stdio.
-- `README.md` cross-platform (setup del rol Postgres + conexión a Claude Code).
-- Verificación: `bunx tsc --noEmit` + MCP Inspector + conexión real a Claude Code.
-- Setup que hace Rafael (fuera del código): crear rol `mcp_auditor` en Supabase, poner `DATABASE_URL` en `.env.local`, agregar bloque a `~/.claude.json`.
+- Correr en la máquina Windows siguiendo [WINDOWS_SETUP.md](WINDOWS_SETUP.md).
 
 ---
 

@@ -118,6 +118,25 @@ function resolvePreset(preset: RangePreset): ResolvedRange {
   }
 }
 
+/**
+ * Formatea un Date (instante UTC) como ISO 8601 en hora de Colombia, con el
+ * offset -05:00 explícito. Ej: 16:19 UTC → "2026-05-22T11:19:38-05:00".
+ * Muestra la hora local Y queda inequívoco/parseable (no como un "...Z" UTC).
+ */
+export function toColombiaISO(date: Date): string {
+  // Colombia es UTC-5 fijo: restamos 5h al instante y leemos los componentes
+  // UTC del resultado, que ahora representan el reloj de pared de Colombia.
+  const shifted = new Date(date.getTime() - 5 * 60 * 60 * 1000);
+  const p = (n: number): string => String(n).padStart(2, "0");
+  const y = shifted.getUTCFullYear();
+  const mo = p(shifted.getUTCMonth() + 1);
+  const d = p(shifted.getUTCDate());
+  const h = p(shifted.getUTCHours());
+  const mi = p(shifted.getUTCMinutes());
+  const s = p(shifted.getUTCSeconds());
+  return `${y}-${mo}-${d}T${h}:${mi}:${s}${COLOMBIA_OFFSET}`;
+}
+
 /** Devuelve YYYY-MM-DD del día (en America/Bogota) de un Date dado. */
 export function colombiaDateStr(d: Date): string {
   // en-CA da formato YYYY-MM-DD, robusto y portable.
